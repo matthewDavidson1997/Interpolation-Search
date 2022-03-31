@@ -295,6 +295,9 @@ public class IST {
     }
     
     
+    public IST() {
+    }
+
     public static void main(String[] args) {
         
         // Array parameters

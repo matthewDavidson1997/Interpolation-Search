@@ -1,6 +1,5 @@
 import numpy as np
 from numpy import random
-import math
 
 
 def generate_random_array(min_val, max_val, array_length):
@@ -17,41 +16,57 @@ def get_key_from_array(array):
 
 
 def interpolation_search(array, key):
-    top = len(array) - 1
-    bottom = 0
-    v_top = array[top]
-    v_bottom = array[bottom]
+    idx_top = len(array) - 1
+    idx_bottom = 0
+    val_top = array[idx_top]
+    val_bottom = array[idx_bottom]
     search_count = 0
-    i = 0
+    idx_guess = idx_bottom
 
-    while (array[i] != key & key >= v_bottom & key <= v_top & v_top != v_bottom):
-        print('Key: ', key, ' | Top: ', top, ' | Bottom: ', bottom, ' | v_bottom: ', v_bottom, ' | v_top: ', v_top)
+    while (
+        array[idx_guess] != key
+        and key >= val_bottom
+        and key <= val_top
+        and val_top != val_bottom
+    ):
+        print(f'Key: {key} | Top: {idx_top} | Bottom: {idx_bottom} | v_bottom: {val_bottom} | v_top: {val_top}')
+
+        idx_guess = ((idx_top - idx_bottom) * (key - val_bottom)) // (val_top - val_bottom) + idx_bottom
         search_count += 1
-        i = math.floor(((top - bottom) * (key - v_bottom)) / (v_top - v_bottom)) + bottom
-        print(i)
+        print(idx_guess)
         # case if key is found at array index i
-        if array[i] == key:
-            print('key: ', key, ' | iteration: ', search_count)
+        if array[idx_guess] == key:
+            print(f'Key: {key} found at index: {idx_guess} after {search_count} iterations')
         # case if key is greater than array index i
-        if array[i] < key:
+        if array[idx_guess] < key:
             print('Too low. Key: ', key, ' | iteration: ', search_count)
-            array_elimination = (((i + 1) - bottom) / len(array))
-            bottom += (i + 1)
-            if array_elimination < 0.25:
-                binary_search(array, top, bottom, key)
+            #array_elimination = (((idx_guess + 1) - idx_bottom) / len(array))
+            idx_bottom = (idx_guess + 1)
+            #if array_elimination < 0.25:
+            #    idx_top, idx_bottom = binary_search(array, idx_top, idx_bottom, key)
         # case if key is less than array index i
-        if array[i] > key:
+        if array[idx_guess] > key:
             print('Too high. Key: ', key, ' | iteration: ', search_count)
-            array_elimination = ((top - (i - 1)) / len(array))
-            top -= top - (i - 1)
-            #print(new_top)
-            if array_elimination < 0.25:
-                binary_search(array, top, bottom, key)
+            #array_elimination = ((idx_top - (idx_guess - 1)) / len(array))
+            idx_top -= idx_top - (idx_guess - 1)
+            #   print(new_top)
+            #if array_elimination < 0.25:
+            #    idx_top, idx_bottom = binary_search(array, idx_top, idx_bottom, key)
 
 
 def binary_search(array, top, bottom, key):
+    """A binary search function.
+
+    Args:
+        array (list): A sorted array of integers.
+        top (int): _description_
+        bottom (_type_): _description_
+        key (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     search_count = 0
-    i = 0
     mid = ((top - bottom) // 2)
     print('mid = ', mid)
 
@@ -62,12 +77,13 @@ def binary_search(array, top, bottom, key):
         search_count += 1
         print('Binary. Too low. Key: ', key, ' | ', 'iteration: ', search_count)
         bottom += (mid + 1)
-        return bottom
+        return top, bottom
     if array[mid] > key:
         search_count += 1
         print('Binary. Too high. Key: ', key, ' | ', 'iteration: ', search_count)
-        top -= top - (i - 1)
-        return top
+        top -= top - (mid - 1)
+        return top, bottom
+
 
 if __name__ == '__main__':
 
@@ -77,4 +93,3 @@ if __name__ == '__main__':
     search_array = generate_random_array(min_val, max_val, array_length)
     search_key = get_key_from_array(search_array)
     interpolation_search(search_array, search_key)
-l¾
