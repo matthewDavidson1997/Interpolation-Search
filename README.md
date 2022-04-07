@@ -1,1 +1,1 @@
-# IST
+# interpolation-search
