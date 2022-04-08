@@ -1,32 +1,6 @@
 import random
 
 
-def generate_random_int_array(min_val, max_val, array_length):
-    """Generates a random list of (potentially repeating) integers.
-
-    Args:
-        min_val (int): The minimum integer value to consider.
-        max_val (int): The maximum integer value to consider.
-        array_length (int): The number of integers in the array.
-
-    Returns:
-        list: A list of integers.
-    """
-    return [random.randint(min_val, max_val) for _ in range(array_length)]
-
-
-def get_random_array_item(array):
-    """Chooses a random item from a list.
-
-    Args:
-        array (list): A list.
-
-    Returns:
-        Any: The random item.
-    """
-    return array[random.randrange(0, len(array))]
-
-
 class ArraySearcher:
     """A class for finding the position of an integer in a sorted array.
     The search method will use a combination of interpolation and binary search strategies.
@@ -205,12 +179,38 @@ class ArraySearcher:
         return self.query_val_idx
 
 
-if __name__ == '__main__':
+def generate_random_array(min_val, max_val, cardinality):
+    """Generates an array (multiset) of random integers.
 
+    Args:
+        min_val (int): The minimum integer value to include in the array.
+        max_val (int): The maximum integer value to include in the array.
+        cardinality (str): The cardinality (length) of the array.
+
+    Returns:
+        list[ints]: A list of random integers.
+    """
+    return [random.randint(min_val, max_val) for _ in range(cardinality)]
+
+
+def get_random_array_item(array):
+    """Chooses a random item from a list.
+
+    Args:
+        array (list): A list.
+
+    Returns:
+        Any: The random item.
+    """
+    return array[random.randrange(0, len(array))]
+
+
+def main():
     min_val = -10000
     max_val = 100000000
-    array_length = 10000
-    search_array = generate_random_int_array(min_val, max_val, array_length)
+    cardinality = 10000
+
+    search_array = generate_random_int_array(min_val, max_val, cardinality)
     query_val = get_random_array_item(search_array)
     searcher = ArraySearcher(search_array)
 
@@ -230,3 +230,9 @@ if __name__ == '__main__':
 
     for method, search_count in zip(methods, search_counts):
         print(f'With {method} method it took {search_count} search steps to find the query value.')
+
+
+
+if __name__ == '__main__':
+    main()
+    
