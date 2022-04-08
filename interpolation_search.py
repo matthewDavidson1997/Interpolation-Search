@@ -332,7 +332,7 @@ def main():
     MAX_VAL_FACTOR = 10
     GROWTH_STEPS = 6
     GROWTH_FACTOR = 2
-    REPEATS = 10
+    REPEATS = 100
 
     for growth_mode in ['arithmetic', 'geometric']:
         testing_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode=growth_mode,
