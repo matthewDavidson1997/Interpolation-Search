@@ -1,5 +1,7 @@
 import random
 
+from numpy import array
+
 
 class ArraySearcher:
     """A class for finding the position of an integer in a sorted array.
@@ -38,7 +40,7 @@ class ArraySearcher:
             ]
         ))
 
-    def _calc_array_elimination(self, idx_guess, idx_top, idx_bottom, mode):
+    def _calc_array_elimination(self, idx_guess, idx_top, idx_bottom, mode, verbose=False):
         """Calculates the fraction of the array that can be removed.
 
         Args:
@@ -56,11 +58,12 @@ class ArraySearcher:
         elif mode == 'high':
             array_elimination = ((idx_top - (idx_guess - 1)) / ((idx_top + 1) - idx_bottom))
 
-        print(f'Index guess {idx_guess} value ({self.array[idx_guess]}) is too {mode}.')
-        print(f'Percentage of array eliminated: {array_elimination:.0%}')
+        if verbose:
+            print(f'Index guess {idx_guess} value ({self.array[idx_guess]}) is too {mode}.')
+            print(f'Percentage of array eliminated: {array_elimination:.0%}')
         return array_elimination
 
-    def _idx_guess(self, idx_top, idx_bottom, search_mode):
+    def _idx_guess(self, idx_top, idx_bottom, search_mode, verbose=False):
         """Guess the index of query_val.
 
         Args:
@@ -76,12 +79,12 @@ class ArraySearcher:
             self.binary_count += 1
             idx_guess = idx_bottom + (idx_top - idx_bottom) // 2
         self.search_count += 1
-        self._print_info(idx_top, idx_bottom, comment=f'{search_mode.capitalize()} search')
+        if verbose:
+            self._print_info(idx_top, idx_bottom, comment=f'{search_mode.capitalize()} search')
         return idx_guess
 
     def _set_search_mode(self, array_elimination_fraction, search_mode):
-        # TODO - write doc-string
-
+        """Method that checks and sets the search_mode based on simple rules."""
         # If we are running in mixed mode, make a decision about which search strategy to use next
         if search_mode == 'binary':
             # If we ran a binary search, then always try interpolation next
@@ -93,10 +96,8 @@ class ArraySearcher:
         else:
             return search_mode
 
-    def search(self, query_val, interpolation_threshold=0.25, search_strategy='mixed'):
+    def search(self, query_val, interpolation_threshold=0.25, search_strategy='mixed', verbose=False):
         """Search for the position of query_val in the array.
-
-        TODO - explain the search strategy here
 
         Args:
             query_val (int): An integer value to find in the array.
@@ -132,8 +133,9 @@ class ArraySearcher:
         if not (query_val >= self.array[idx_bottom] and query_val <= self.array[idx_top]):
             raise ValueError(f'The query value ({query_val}) is outside of the array range ({self.array[0] - self.array[-1]}).')
 
-        # Print the initial status
-        self._print_info(idx_top, idx_bottom, comment='Starting info')
+        if verbose:
+            # Print the initial status
+            self._print_info(idx_top, idx_bottom, comment='Starting info')
 
         # Search loop
         if search_strategy in ['mixed', 'interpolation']:
@@ -164,7 +166,6 @@ class ArraySearcher:
                 idx_bottom = idx_guess + 1
                 if search_strategy == 'mixed':
                     search_mode = self._set_search_mode(array_elimination_fraction, search_mode)
-                continue
 
             # If query_val is less than the values at array index 'idx_guess'
             elif self.array[idx_guess] > query_val:
@@ -173,10 +174,52 @@ class ArraySearcher:
                 idx_top = idx_guess - 1
                 if search_strategy == 'mixed':
                     search_mode = self._set_search_mode(array_elimination_fraction, search_mode)
-                continue
 
-        print(f'The query value ({query_val}) was found at index {idx_guess} (of the sorted array) after {self.search_count} iteration(s)')
+        if verbose:
+            print(f'The query value ({query_val}) was found at index {idx_guess} (of the sorted array) after {self.search_count} iteration(s)')
         return self.query_val_idx
+
+    def compare_methods(self, query_val, mixed_thresholds=None, verbose=False):
+        """Runs interpolation, mixed, and binary search methods and returns a dictionary of method names against
+        iteration count for finding the query_val in the array.
+
+        Args:
+            query_val (int): The value we are looking for in the array.
+            mixed_thresholds (list[ints], optional): If provided, this will not simply run the mixed mode with the
+                                                     default threshold, but will compare using the provided values.
+                                                     Defaults to None.
+            verbose (bool, optional): Print information about the searching. Defaults to False.
+
+        Returns:
+            dict: A dictionary of search method names and search iterations.
+        """
+        performance_dict = {}
+
+        for strategy in ['interpolation', 'mixed', 'binary']:
+            args_list = [{'search_strategy': strategy}]
+            if strategy == 'mixed' and mixed_thresholds is not None:
+                args_list = [{'search_strategy': strategy, 'interpolation_threshold': t} for t in mixed_thresholds]
+
+            for args_dict in args_list:
+                threshold = args_dict.get('interpolation_threshold')
+                if threshold:
+                    strategy_name = f'{strategy}-{threshold}'
+                else:
+                    strategy_name = strategy
+                self.search(query_val, **args_dict, verbose=verbose)
+                performance_dict[strategy_name] = self.search_count
+
+            if verbose:
+                print(f'With {strategy_name} method it took {self.search_count} search step(s) to find the query value.')
+        return performance_dict
+
+    def get_random_array_item(self):
+        """Chooses a random item from the array.
+
+        Returns:
+            int: The random array item.
+        """
+        return self.array[random.randrange(0, len(self.array))]
 
 
 def generate_random_array(min_val, max_val, cardinality):
@@ -193,46 +236,58 @@ def generate_random_array(min_val, max_val, cardinality):
     return [random.randint(min_val, max_val) for _ in range(cardinality)]
 
 
-def get_random_array_item(array):
-    """Chooses a random item from a list.
+def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repeats, min_array_val, max_val_factor):
+    """Runs repeated tests on each provided cardinality, generating a random array
+    each time and comparing each splitting method on that array.
 
     Args:
-        array (list): A list.
+        start_cardinality (int): The cardinality to start with.
+        growth_mode (str): Whether to grow the cardinality arithmetically ('arithmetic'), or
+                           geometrically ('geometric').
+        growth_factor (int): The amount to grow the cardinality by on each step.
+        growth_steps (int): The number of times to grow the cardinality.
+        repeats (int): Number of repeats.
+        min_array_val (int): Minimum possible value in the array.
+        max_val_factor (int): Scaling factor to set the maximum possible
+                              value in the array by multiplying by the cardinality.
 
     Returns:
-        Any: The random item.
+        list[dicts]: A list of dictionaries of length 'repeats'.
+                     Keys are the method names, plus 'cardinality'.
+                     Values are the method absolute subset differences, plus cardinality
     """
-    return array[random.randrange(0, len(array))]
+    testing_results = []
+    for _ in range(repeats):
+        cardinality = start_cardinality
+        for step in range(growth_steps):
+            if growth_mode == 'arithmetic':
+                cardinality = cardinality + (step * growth_factor)
+            elif growth_mode == 'geometric':
+                cardinality = cardinality * (step * growth_factor)
+
+            array = generate_random_array(min_val=min_array_val, max_val=max_val_factor * cardinality,
+                                          cardinality=cardinality)
+
+            searcher = ArraySearcher(array)
+            query_val = searcher.get_random_array_item()
+            results = searcher.compare_methods(query_val)
+            results['cardinality'] = cardinality
+            testing_results.append(results)
+    return testing_results
 
 
 def main():
-    min_val = -10000
-    max_val = 100000000
-    cardinality = 10000
+    MIN_ARRAY_VAL = 1
+    START_CARDINALITY = 100
+    MAX_VAL_FACTOR = 10
+    GROWTH_STEPS = 100
+    GROWTH_MODE = 'arithmetic'
+    GROWTH_FACTOR = 2
+    REPEATS = 10
 
-    search_array = generate_random_int_array(min_val, max_val, cardinality)
-    query_val = get_random_array_item(search_array)
-    searcher = ArraySearcher(search_array)
-
-    search_counts = []
-    methods = []
-    strategies = ['interpolation', 'binary']
-    for strategy in strategies:
-        searcher.search(query_val, search_strategy=strategy)
-        search_counts.append(searcher.search_count)
-        methods.append(strategy)
-
-    thresholds = [0.1, 0.25, 0.5, 0.75]
-    for threshold in thresholds:
-        searcher.search(query_val, interpolation_threshold=threshold)
-        search_counts.append(searcher.search_count)
-        methods.append(f'mixed ({threshold} threshold)')
-
-    for method, search_count in zip(methods, search_counts):
-        print(f'With {method} method it took {search_count} search steps to find the query value.')
-
+    test_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode=GROWTH_MODE, growth_factor=GROWTH_FACTOR,
+                             repeats=REPEATS, min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
 
 
 if __name__ == '__main__':
     main()
-    
