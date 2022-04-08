@@ -263,7 +263,7 @@ def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repea
             if growth_mode == 'arithmetic':
                 cardinality = cardinality + (step * growth_factor)
             elif growth_mode == 'geometric':
-                cardinality = cardinality * (step * growth_factor)
+                cardinality = cardinality * (step + 1) * growth_factor
 
             array = generate_random_array(min_val=min_array_val, max_val=max_val_factor * cardinality,
                                           cardinality=cardinality)
@@ -278,15 +278,19 @@ def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repea
 
 def main():
     MIN_ARRAY_VAL = 1
-    START_CARDINALITY = 100
+    START_CARDINALITY = 10
     MAX_VAL_FACTOR = 10
-    GROWTH_STEPS = 100
-    GROWTH_MODE = 'arithmetic'
+    GROWTH_STEPS = 10
     GROWTH_FACTOR = 2
     REPEATS = 10
 
-    test_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode=GROWTH_MODE, growth_factor=GROWTH_FACTOR,
-                             repeats=REPEATS, min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
+    for growth_mode in ['arithmetic', 'geometric']:
+
+        test_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode=growth_mode,
+                                 growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
+                                 min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
+
+        print(len(test_results))
 
 
 if __name__ == '__main__':
