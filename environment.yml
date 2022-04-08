@@ -1,0 +1,10 @@
+name: interpolation-search
+channels:
+  - defaults
+dependencies:
+  - seaborn
+  - matplotlib
+  - pandas
+  - flake8
+  - ipykernel
+prefix: C:\matth\Anaconda\envs\interpolation-search

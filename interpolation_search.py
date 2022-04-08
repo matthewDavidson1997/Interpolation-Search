@@ -1,6 +1,8 @@
 import random
 
-from numpy import array
+from matplotlib import pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 
 class ArraySearcher:
@@ -258,12 +260,14 @@ def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repea
     """
     testing_results = []
     for _ in range(repeats):
+        print(start_cardinality)
         cardinality = start_cardinality
         for step in range(growth_steps):
             if growth_mode == 'arithmetic':
                 cardinality = cardinality + (step * growth_factor)
             elif growth_mode == 'geometric':
-                cardinality = cardinality * (step + 1) * growth_factor
+                cardinality = cardinality * growth_factor**step
+            print(cardinality)
 
             array = generate_random_array(min_val=min_array_val, max_val=max_val_factor * cardinality,
                                           cardinality=cardinality)
@@ -276,21 +280,71 @@ def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repea
     return testing_results
 
 
+def seaborn_plot(results, repeats, figsize=(12, 9), facecolor='white', confidence_interval=95):
+    """Generate a Seaborn plot of the results data.
+
+    Args:
+        results (list[dicts]): A list of results dictionaries - one dictionary per test run.
+        repeats (int): The number of repeats employed to generate 'results'.
+        figsize (tuple, optional): The figure dimensions in inches. Defaults to (12, 9).
+        facecolor (str, optional): The figure background colour. Defaults to 'white'.
+        confidence_interval (int or str, optional): Confidence interval percent value to use in the plot.
+                                                    Alternatively, if 'sd' the standard deviation will be shown.
+                                                    Defaults to 95.
+
+    Returns:
+        matplotlib.figure.Figure: The figure.
+    """
+    # Make a dataframe from the list of dictionaries
+    testing_df = pd.DataFrame(results)
+    # Unpivot all columns not specified in the id_vars list
+    tall_df = pd.melt(testing_df, id_vars=['cardinality'], var_name='method', value_name='iterations')
+    # Make the plot
+    fig, ax = plt.subplots(figsize=figsize, facecolor=facecolor)
+    ax = sns.lineplot(data=tall_df, x='cardinality', y='iterations', hue='method', ci=confidence_interval)
+    ax.set_xlabel('multiset cardinality')
+    ax.set_xscale('log', base=2)
+    ax.set_ylabel('mean number of iterations')
+    # Put legend outside plot
+    ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+    # Underscore assignment to supress Text object output
+    _ = ax.set_title(f'Comparison of multiset searching methods ({repeats} repeats)')
+    return fig
+
 def main():
+
+    MIN_VAL = 0
+    MAX_VAL = 1000
+    CARDINALITY = 50
+
+    # Walkthrough examples
+    array = generate_random_array(MIN_VAL, MAX_VAL, CARDINALITY)
+    print(sorted(array))
+    searcher = ArraySearcher(array)
+    query_val = searcher.get_random_array_item()
+    print(query_val)
+    results = searcher.compare_methods(query_val, verbose=True)
+    print(results)
+
+    # Increasing cardinalities
     MIN_ARRAY_VAL = 1
     START_CARDINALITY = 10
     MAX_VAL_FACTOR = 10
-    GROWTH_STEPS = 10
+    GROWTH_STEPS = 6
     GROWTH_FACTOR = 2
     REPEATS = 10
 
     for growth_mode in ['arithmetic', 'geometric']:
+        testing_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode=growth_mode,
+                                    growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
+                                    min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
 
-        test_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode=growth_mode,
-                                 growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
-                                 min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
+    testing_df = pd.DataFrame(testing_results)
+    testing_df.to_csv('results/testing_df.csv')
 
-        print(len(test_results))
+    # Make seaborn plot
+    fig = seaborn_plot(testing_results, repeats=REPEATS)
+    fig.savefig('results/comparison_seaborn.png')
 
 
 if __name__ == '__main__':
