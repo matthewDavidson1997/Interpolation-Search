@@ -1,10 +1,11 @@
 name: interpolation-search
 channels:
-  - defaults
+  - conda-forge
 dependencies:
   - seaborn
   - matplotlib
   - pandas
   - flake8
   - ipykernel
+  - tqdm
 prefix: C:\matth\Anaconda\envs\interpolation-search
