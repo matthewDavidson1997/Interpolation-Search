@@ -260,14 +260,11 @@ def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repea
     """
     testing_results = []
     for _ in range(repeats):
-        print(start_cardinality)
-        cardinality = start_cardinality
         for step in range(growth_steps):
             if growth_mode == 'arithmetic':
-                cardinality = cardinality + (step * growth_factor)
+                cardinality = start_cardinality + (step * growth_factor)
             elif growth_mode == 'geometric':
-                cardinality = cardinality * growth_factor**step
-            print(cardinality)
+                cardinality = start_cardinality * growth_factor**step
 
             array = generate_random_array(min_val=min_array_val, max_val=max_val_factor * cardinality,
                                           cardinality=cardinality)
