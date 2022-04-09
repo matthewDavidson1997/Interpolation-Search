@@ -3,6 +3,7 @@ import random
 from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
+from tqdm import tqdm
 
 
 class ArraySearcher:
@@ -259,7 +260,7 @@ def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repea
                      Values are the method absolute subset differences, plus cardinality
     """
     testing_results = []
-    for _ in range(repeats):
+    for _ in tqdm(range(repeats)):
         for step in range(growth_steps):
             if growth_mode == 'arithmetic':
                 cardinality = start_cardinality + (step * growth_factor)
@@ -277,12 +278,14 @@ def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repea
     return testing_results
 
 
-def seaborn_plot(results, repeats, figsize=(12, 9), facecolor='white', confidence_interval=95):
+def seaborn_plot(results, repeats, x_axis_log_base=None, figsize=(12, 9), facecolor='white', confidence_interval=95):
     """Generate a Seaborn plot of the results data.
 
     Args:
         results (list[dicts]): A list of results dictionaries - one dictionary per test run.
         repeats (int): The number of repeats employed to generate 'results'.
+        x_axis_log_base (int or None, optional): The base to use for the x-axis, if logorithmic.
+                                                 Defaults to None.
         figsize (tuple, optional): The figure dimensions in inches. Defaults to (12, 9).
         facecolor (str, optional): The figure background colour. Defaults to 'white'.
         confidence_interval (int or str, optional): Confidence interval percent value to use in the plot.
@@ -300,7 +303,8 @@ def seaborn_plot(results, repeats, figsize=(12, 9), facecolor='white', confidenc
     fig, ax = plt.subplots(figsize=figsize, facecolor=facecolor)
     ax = sns.lineplot(data=tall_df, x='cardinality', y='iterations', hue='method', ci=confidence_interval)
     ax.set_xlabel('multiset cardinality')
-    ax.set_xscale('log', base=2)
+    if x_axis_log_base:
+        ax.set_xscale('log', base=x_axis_log_base)
     ax.set_ylabel('mean number of iterations')
     # Underscore assignment to supress Text object output
     _ = ax.set_title(f'Comparison of multiset searching methods ({repeats} repeats)')
@@ -330,6 +334,29 @@ def main():
     results = searcher.compare_methods(query_val, verbose=True)
     print(results)
 
+    # ARITHMETIC PROGRESSION
+    # Input parameters
+    MIN_ARRAY_VAL = 1
+    START_CARDINALITY = 50
+    MAX_VAL_FACTOR = 10
+    GROWTH_STEPS = 1000
+    GROWTH_FACTOR = 50
+    REPEATS = 1000
+
+    # Run tests
+    testing_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode='arithmetic',
+                                growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
+                                min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
+    
+    # Export raw data to CSV
+    testing_df = pd.DataFrame(testing_results)
+    testing_df.to_csv('results/arithmetic_results.csv')
+    
+    # Make seaborn plot
+    fig = seaborn_plot(testing_results, repeats=REPEATS)
+    fig.savefig('results/arithmetic_comparison.png')
+    
+    # GEOMETRIC PROGRESSION
     # Increasing cardinalities
     MIN_ARRAY_VAL = 1
     START_CARDINALITY = 50
@@ -338,17 +365,18 @@ def main():
     GROWTH_FACTOR = 2
     REPEATS = 1000
 
-    for growth_mode in ['arithmetic', 'geometric']:
-        testing_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode=growth_mode,
-                                    growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
-                                    min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
-
+    # Run tests
+    testing_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode='geometric',
+                                growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
+                                min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
+    
+    # Export raw data to CSV
     testing_df = pd.DataFrame(testing_results)
-    testing_df.to_csv('results/testing_df.csv')
-
+    testing_df.to_csv('results/geometric_results.csv')
+    
     # Make seaborn plot
-    fig = seaborn_plot(testing_results, repeats=REPEATS)
-    fig.savefig('results/comparison_seaborn.png')
+    fig = seaborn_plot(results=testing_results, repeats=REPEATS, x_axis_log_base=2)
+    fig.savefig('results/geometric_comparison.png')
 
 
 if __name__ == '__main__':
