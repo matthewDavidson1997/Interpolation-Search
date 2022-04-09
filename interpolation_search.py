@@ -313,6 +313,10 @@ def seaborn_plot(results, repeats, figsize=(12, 9), facecolor='white', confidenc
 
 def main():
 
+    # Pandas and seaborn options
+    pd.set_option('display.max_rows', 10)
+    sns.set_context('talk') 
+    
     # Make sure we have a folder to write results to
     import os
     if not os.path.isdir('results'):
