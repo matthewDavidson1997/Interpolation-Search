@@ -302,8 +302,6 @@ def seaborn_plot(results, repeats, figsize=(12, 9), facecolor='white', confidenc
     ax.set_xlabel('multiset cardinality')
     ax.set_xscale('log', base=2)
     ax.set_ylabel('mean number of iterations')
-    # Put legend outside plot
-    ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
     # Underscore assignment to supress Text object output
     _ = ax.set_title(f'Comparison of multiset searching methods ({repeats} repeats)')
     return fig
