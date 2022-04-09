@@ -313,6 +313,11 @@ def seaborn_plot(results, repeats, figsize=(12, 9), facecolor='white', confidenc
 
 def main():
 
+    # Make sure we have a folder to write results to
+    import os
+    if not os.path.isdir('results'):
+        os.mkdir('results')
+
     MIN_VAL = 0
     MAX_VAL = 1000
     CARDINALITY = 50
