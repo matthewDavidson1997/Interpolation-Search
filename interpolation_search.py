@@ -225,6 +225,34 @@ class ArraySearcher:
         return self.array[random.randrange(0, len(self.array))]
 
 
+def generate_random_array(min_start, max_start, min_step, max_step, cardinality,
+                          space='arithmetic', sample_space_scale_factor=100):
+    """Generate an array sampled from a random arithmetic or geometric progression.
+
+    Args:
+        min_start (int): Minimum value for the progression start.
+        max_start (int): Maximum value for the progression start.
+        min_step (int): Minimum progression step size.
+        max_step (int): Maximum progression step size.
+        cardinality (int): Length of the returned array.
+        space (str, optional): Space of the progression being sampled from ('arithmetic' or
+                               'geometric'). Defaults to 'arithmetic'.
+        sample_space_scale_factor (int, optional): Fold-bigger the progression is vs the
+                                                   returned array. Defaults to 100.
+
+    Returns:
+        list[ints]: The 
+    """
+    start = random.randint(min_start, max_start)
+    step = random.randint(min_step, max_step)
+    if space == 'arithmetic':
+        series = [start + (i * step) for i in range(cardinality * sample_space_scale_factor)]
+    elif space == 'geometric':
+        series = [start * (step**i) for i in range(cardinality * sample_space_scale_factor)]
+    
+    return [series[random.randrange(0, cardinality * sample_space_scale_factor)] for _ in range(cardinality)]
+
+
 def generate_arithmetic_array(start, step, cardinality):
     """Generates an arithmetic array.
 
