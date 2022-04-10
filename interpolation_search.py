@@ -239,6 +239,52 @@ def generate_random_array(min_val, max_val, cardinality):
     return [random.randint(min_val, max_val) for _ in range(cardinality)]
 
 
+def generate_arithmetic_array(start, step, cardinality):
+    """Generates an arithmetic array.
+
+    Args:
+        start (int): Start value.
+        step (int): Arithmetic step (add this amount each step).
+        cardinality (int): Length of array.
+
+    Returns:
+        list[ints]: The arithmetic array.
+    """
+    return [start + (i * step) for i in range(cardinality)]
+
+
+def generate_geometric_array(start, step, cardinality):
+    """Generates a geometric array.
+
+    Args:
+        start (int): Start value.
+        step (int): Multiplicative factor (multiply by this amount each step).
+        cardinality (int): Length of array.
+
+    Returns:
+        list[ints]: The arithmetic array.
+    """
+    return [start * (step**i) for i in range(cardinality)]
+
+def generate_fibonacci_series(cardinality):
+    """Generate a list of length 'cardinality' of values from the Fibonacci series.
+
+    Args:
+        cardinality (int): Length of the array.
+
+    Returns:
+        list[ints]: The Fibonacci series.
+    """
+    # https://stackoverflow.com/questions/494594/how-to-write-the-fibonacci-sequence
+    def fib():
+        a, b = 0, 1
+        while True:            # First iteration:
+            yield a            # yield 0 to start with and then
+            a, b = b, a + b    # a will now be 1, and b will also be 1, (0 + 1)
+    
+    return [val for _, val in zip(range(cardinality), fib())]
+
+
 def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repeats, min_array_val, max_val_factor):
     """Runs repeated tests on each provided cardinality, generating a random array
     each time and comparing each splitting method on that array.
