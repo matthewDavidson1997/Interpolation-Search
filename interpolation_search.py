@@ -285,7 +285,7 @@ def generate_fibonacci_series(cardinality):
     return [val for _, val in zip(range(cardinality), fib())]
 
 
-def run_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repeats, min_array_val, max_val_factor):
+def run_cardinality_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repeats, min_array_val, max_val_factor):
     """Runs repeated tests on each provided cardinality, generating a random array
     each time and comparing each splitting method on that array.
 
@@ -390,9 +390,9 @@ def main():
     REPEATS = 1000
 
     # Run tests
-    testing_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode='arithmetic',
-                                growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
-                                min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
+    testing_results = run_cardinality_tests(start_cardinality=START_CARDINALITY, growth_mode='arithmetic',
+                                            growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
+                                            min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
     
     # Export raw data to CSV
     testing_df = pd.DataFrame(testing_results)
@@ -412,9 +412,9 @@ def main():
     REPEATS = 1000
 
     # Run tests
-    testing_results = run_tests(start_cardinality=START_CARDINALITY, growth_mode='geometric',
-                                growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
-                                min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
+    testing_results = run_cardinality_tests(start_cardinality=START_CARDINALITY, growth_mode='geometric',
+                                            growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
+                                            min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
     
     # Export raw data to CSV
     testing_df = pd.DataFrame(testing_results)
