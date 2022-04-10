@@ -356,6 +356,26 @@ def seaborn_plot(results, repeats, x_axis_log_base=None, figsize=(12, 9), faceco
     _ = ax.set_title(f'Comparison of multiset searching methods ({repeats} repeats)')
     return fig
 
+
+def run_array_space_tests(start, step, cardinality, repeats):
+    testing_results = []
+    arithmetic = generate_arithmetic_array(start, step, cardinality)
+    geometric = generate_geometric_array(start, step, cardinality)
+    fibonacci = generate_fibonacci_series(cardinality)
+    for name, array in [('arithmetic', arithmetic),
+                       ('geometric', geometric),
+                       ('fibonacci', fibonacci)]:
+
+        searcher = ArraySearcher(array)
+        for _ in range(repeats):
+            query_val = searcher.get_random_array_item()
+            results = searcher.compare_methods(query_val)
+            results['cardinality'] = cardinality
+            results['series_type'] = name
+            testing_results.append(results)
+    return testing_results
+
+
 def main():
 
     # Pandas and seaborn options
