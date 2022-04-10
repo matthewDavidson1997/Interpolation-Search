@@ -339,8 +339,8 @@ def main():
     MIN_ARRAY_VAL = 1
     START_CARDINALITY = 50
     MAX_VAL_FACTOR = 10
-    GROWTH_STEPS = 1000
-    GROWTH_FACTOR = 50
+    GROWTH_STEPS = 100
+    GROWTH_FACTOR = 10
     REPEATS = 1000
 
     # Run tests
