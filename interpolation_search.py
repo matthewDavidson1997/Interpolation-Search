@@ -225,20 +225,6 @@ class ArraySearcher:
         return self.array[random.randrange(0, len(self.array))]
 
 
-def generate_random_array(min_val, max_val, cardinality):
-    """Generates an array (multiset) of random integers.
-
-    Args:
-        min_val (int): The minimum integer value to include in the array.
-        max_val (int): The maximum integer value to include in the array.
-        cardinality (str): The cardinality (length) of the array.
-
-    Returns:
-        list[ints]: A list of random integers.
-    """
-    return [random.randint(min_val, max_val) for _ in range(cardinality)]
-
-
 def generate_arithmetic_array(start, step, cardinality):
     """Generates an arithmetic array.
 
@@ -308,6 +294,7 @@ def run_cardinality_tests(start_cardinality, growth_mode, growth_factor, growth_
     testing_results = []
     for _ in tqdm(range(repeats)):
         for step in range(growth_steps):
+
             if growth_mode == 'arithmetic':
                 cardinality = start_cardinality + (step * growth_factor)
             elif growth_mode == 'geometric':
@@ -321,15 +308,16 @@ def run_cardinality_tests(start_cardinality, growth_mode, growth_factor, growth_
             results = searcher.compare_methods(query_val)
             results['cardinality'] = cardinality
             testing_results.append(results)
+
     return testing_results
 
 
-def seaborn_plot(results, repeats, x_axis_log_base=None, figsize=(12, 9), facecolor='white', confidence_interval=95):
+def seaborn_plot(results, title=None, x_axis_log_base=None, figsize=(12, 9), facecolor='white', confidence_interval=95):
     """Generate a Seaborn plot of the results data.
 
     Args:
         results (list[dicts]): A list of results dictionaries - one dictionary per test run.
-        repeats (int): The number of repeats employed to generate 'results'.
+        title (str): The plot title.
         x_axis_log_base (int or None, optional): The base to use for the x-axis, if logorithmic.
                                                  Defaults to None.
         figsize (tuple, optional): The figure dimensions in inches. Defaults to (12, 9).
@@ -343,38 +331,61 @@ def seaborn_plot(results, repeats, x_axis_log_base=None, figsize=(12, 9), faceco
     """
     # Make a dataframe from the list of dictionaries
     testing_df = pd.DataFrame(results)
+    
     # Unpivot all columns not specified in the id_vars list
     tall_df = pd.melt(testing_df, id_vars=['cardinality'], var_name='method', value_name='iterations')
     # Make the plot
+    print(tall_df)
     fig, ax = plt.subplots(figsize=figsize, facecolor=facecolor)
     ax = sns.lineplot(data=tall_df, x='cardinality', y='iterations', hue='method', ci=confidence_interval)
     ax.set_xlabel('multiset cardinality')
     if x_axis_log_base:
         ax.set_xscale('log', base=x_axis_log_base)
     ax.set_ylabel('mean number of iterations')
-    # Underscore assignment to supress Text object output
-    _ = ax.set_title(f'Comparison of multiset searching methods ({repeats} repeats)')
+    # Title
+    if title:
+        # Get repeats
+        repeats = len(testing_df)
+        # Underscore assignment to supress Text object output
+        _ = ax.set_title(f'{title} ({repeats} repeats)')
     return fig
 
 
-def run_array_space_tests(start, step, cardinality, repeats):
+def run_array_space_tests(cardinality, repeats, start, step):
     testing_results = []
     arithmetic = generate_arithmetic_array(start, step, cardinality)
     geometric = generate_geometric_array(start, step, cardinality)
     fibonacci = generate_fibonacci_series(cardinality)
-    for name, array in [('arithmetic', arithmetic),
-                       ('geometric', geometric),
-                       ('fibonacci', fibonacci)]:
-
+    for space, array in [('arithmetic', arithmetic), ('geometric', geometric), ('fibonacci', fibonacci)]:
         searcher = ArraySearcher(array)
-        for _ in range(repeats):
+        for _ in tqdm(range(repeats)):
             query_val = searcher.get_random_array_item()
             results = searcher.compare_methods(query_val)
-            results['cardinality'] = cardinality
-            results['series_type'] = name
+            results['space'] = space
             testing_results.append(results)
+
     return testing_results
 
+
+def plot_array_space_tests(results, title=None, figsize=(12, 9), facecolor='white'):
+    # Make a dataframe from the list of dictionaries
+    testing_df = pd.DataFrame(results)
+    # Unpivot all columns not specified in the id_vars list
+    tall_df = pd.melt(testing_df, id_vars=['space'], var_name='method', value_name='iterations')
+    # Make the plot
+    print(tall_df)
+    fig, ax = plt.subplots(figsize=figsize, facecolor=facecolor)
+    ax = sns.barplot(data=tall_df, x='space', y='iterations', hue='method')
+    ax.set_xlabel('array space')
+    ax.set_yscale('log', base=10)
+    ax.set_ylabel('log(mean number of iterations)')
+    # Title
+    if title:
+        # Get repeats
+        repeats = testing_df.groupby(['space']).agg('size')[0]
+        # Underscore assignment to supress Text object output
+        _ = ax.set_title(f'{title} ({repeats} lookups)')
+    return fig
 
 def main():
 
@@ -387,19 +398,48 @@ def main():
     if not os.path.isdir('results'):
         os.mkdir('results')
 
-    MIN_VAL = 0
-    MAX_VAL = 1000
-    CARDINALITY = 50
+    CARDINALITY = 1000
+    MIN_START = 1
+    MAX_START = 1000
+    MIN_STEP = 1
+    MAX_STEP = 1000
 
-    # Walkthrough examples
-    array = generate_random_array(MIN_VAL, MAX_VAL, CARDINALITY)
-    print(sorted(array))
+    # WALKTHROUGH EXAMPLE
+    # Generate a random array of length 1000
+    # sampled from a random arithmetic progression of length 100 * 1000
+    array = generate_random_progression(MIN_START, MAX_START, MIN_STEP, MAX_STEP,
+                                        CARDINALITY, 'arithmetic')
     searcher = ArraySearcher(array)
     query_val = searcher.get_random_array_item()
     print(query_val)
     results = searcher.compare_methods(query_val, verbose=True)
     print(results)
 
+
+    # Run tests
+    testing_results = run_cardinality_tests(start_cardinality=START_CARDINALITY, growth_mode='arithmetic',
+                                            growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
+                                            min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
+
+
+    # COMPARE ARITHMETIC, GEOMETRIC, FIBONACCI
+    # Input parameters
+    START = 1
+    STEP = 2
+    CARDINALITY = 1000
+    REPEATS = 1000
+    
+    testing_results = run_array_space_tests(cardinality=CARDINALITY,
+                                            repeats=REPEATS,
+                                            start=START, step=STEP)
+    testing_df = pd.DataFrame(testing_results)
+    testing_df.to_csv('results/array_space_results.csv')
+
+    # Make seaborn plot
+    fig = plot_array_space_tests(testing_results, title='Array space comparison')
+    fig.savefig('results/array_space_comparison.png')
+    
+    
     # ARITHMETIC PROGRESSION
     # Input parameters
     MIN_ARRAY_VAL = 1
@@ -413,6 +453,10 @@ def main():
     testing_results = run_cardinality_tests(start_cardinality=START_CARDINALITY, growth_mode='arithmetic',
                                             growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
                                             min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
+    
+    # Make seaborn plot
+    fig = seaborn_plot(testing_results, hue='series_type')
+    fig.savefig('results/arithmetic_comparison.png')
     
     # Export raw data to CSV
     testing_df = pd.DataFrame(testing_results)
