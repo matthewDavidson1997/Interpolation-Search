@@ -225,94 +225,59 @@ class ArraySearcher:
         return self.array[random.randrange(0, len(self.array))]
 
 
-def generate_random_array(min_start, max_start, min_step, max_step, cardinality,
-                          space='arithmetic', sample_space_scale_factor=100):
+def generate_random_array(cardinality,
+                          space='arithmetic',
+                          start_range=(1, 1000),
+                          step_range=(1, 1000),
+                          sample_space_scale=None):
     """Generate an array sampled from a random arithmetic or geometric progression.
 
     Args:
-        min_start (int): Minimum value for the progression start.
-        max_start (int): Maximum value for the progression start.
-        min_step (int): Minimum progression step size.
-        max_step (int): Maximum progression step size.
         cardinality (int): Length of the returned array.
         space (str, optional): Space of the progression being sampled from ('arithmetic' or
                                'geometric'). Defaults to 'arithmetic'.
-        sample_space_scale_factor (int, optional): Fold-bigger the progression is vs the
-                                                   returned array. Defaults to 100.
+        start_range (tuple[ints], optional): Min and max values for the progression start.
+                                             Defaults to (1, 1000).
+        step_range (tuple[ints], optional): Min and max values for the progression step.
+                                            Defaults to (1, 1000).
+        sample_space_scale (None or int, optional): If None, then the returned array will be
+                                                    a true progression.
+                                                    If int, then this is how 'fold-bigger' the
+                                                    sampled progression is vs the returned array.
+                                                    Defaults to None.
 
     Returns:
-        list[ints]: The 
+        list[ints]: The array.
     """
-    start = random.randint(min_start, max_start)
-    step = random.randint(min_step, max_step)
+    start = random.randint(*start_range)
+    step = random.randint(*step_range)
+
+    if sample_space_scale is None:
+        factor = 1
+    else:
+        factor = sample_space_scale
+
     if space == 'arithmetic':
-        series = [start + (i * step) for i in range(cardinality * sample_space_scale_factor)]
+        series = [start + (i * step) for i in range(cardinality * factor)]
     elif space == 'geometric':
-        series = [start * (step**i) for i in range(cardinality * sample_space_scale_factor)]
+        series = [start * (step**i) for i in range(cardinality * factor)]
     
-    return [series[random.randrange(0, cardinality * sample_space_scale_factor)] for _ in range(cardinality)]
+    if sample_space_scale is None:
+        return series
+    else:
+        return [series[random.randrange(0, cardinality * factor)] for _ in range(cardinality)]
 
 
-def generate_arithmetic_array(start, step, cardinality):
-    """Generates an arithmetic array.
-
-    Args:
-        start (int): Start value.
-        step (int): Arithmetic step (add this amount each step).
-        cardinality (int): Length of array.
-
-    Returns:
-        list[ints]: The arithmetic array.
-    """
-    return [start + (i * step) for i in range(cardinality)]
-
-
-def generate_geometric_array(start, step, cardinality):
-    """Generates a geometric array.
-
-    Args:
-        start (int): Start value.
-        step (int): Multiplicative factor (multiply by this amount each step).
-        cardinality (int): Length of array.
-
-    Returns:
-        list[ints]: The arithmetic array.
-    """
-    return [start * (step**i) for i in range(cardinality)]
-
-def generate_fibonacci_series(cardinality):
-    """Generate a list of length 'cardinality' of values from the Fibonacci series.
-
-    Args:
-        cardinality (int): Length of the array.
-
-    Returns:
-        list[ints]: The Fibonacci series.
-    """
-    # https://stackoverflow.com/questions/494594/how-to-write-the-fibonacci-sequence
-    def fib():
-        a, b = 0, 1
-        while True:            # First iteration:
-            yield a            # yield 0 to start with and then
-            a, b = b, a + b    # a will now be 1, and b will also be 1, (0 + 1)
+def run_cardinality_tests(space='arithmetic', repeats=1000, top_power=10):
+    """Runs repeated tests on a series of doubling cardinality values.
     
-    return [val for _, val in zip(range(cardinality), fib())]
-
-
-def run_cardinality_tests(start_cardinality, growth_mode, growth_factor, growth_steps, repeats, min_array_val, max_val_factor):
-    """Runs repeated tests on each provided cardinality, generating a random array
-    each time and comparing each splitting method on that array.
+    A new progression is generated for each repeat, and all 3 splitting methods are compared.
 
     Args:
-        start_cardinality (int): The cardinality to start with.
-        growth_mode (str): Whether to grow the cardinality arithmetically ('arithmetic'), or
-                           geometrically ('geometric').
-        growth_factor (int): The amount to grow the cardinality by on each step.
-        growth_steps (int): The number of times to grow the cardinality.
-        repeats (int): Number of repeats.
-        min_array_val (int): Minimum possible value in the array.
-        max_val_factor (int): Scaling factor to set the maximum possible
-                              value in the array by multiplying by the cardinality.
+        space (str, optional): Whether to test 'arithmetic' or 'geometric' progressions.
+                               Defaults to 'arithmetic'.
+        repeats (int, optional): Number of repeats. Defaults to 1000.
+        top_power (int, optional): Final value to use for the doubling progression (2**top_power).
 
     Returns:
         list[dicts]: A list of dictionaries of length 'repeats'.
@@ -320,17 +285,9 @@ def run_cardinality_tests(start_cardinality, growth_mode, growth_factor, growth_
                      Values are the method absolute subset differences, plus cardinality
     """
     testing_results = []
-    for _ in tqdm(range(repeats)):
-        for step in range(growth_steps):
-
-            if growth_mode == 'arithmetic':
-                cardinality = start_cardinality + (step * growth_factor)
-            elif growth_mode == 'geometric':
-                cardinality = start_cardinality * growth_factor**step
-
-            array = generate_random_array(min_val=min_array_val, max_val=max_val_factor * cardinality,
-                                          cardinality=cardinality)
-
+    for cardinality in [2**n for n in range(top_power + 1)]:
+        for _ in tqdm(range(repeats)):
+            array = generate_random_array(cardinality=cardinality, space=space)
             searcher = ArraySearcher(array)
             query_val = searcher.get_random_array_item()
             results = searcher.compare_methods(query_val)
@@ -340,14 +297,12 @@ def run_cardinality_tests(start_cardinality, growth_mode, growth_factor, growth_
     return testing_results
 
 
-def seaborn_plot(results, title=None, x_axis_log_base=None, figsize=(12, 9), facecolor='white', confidence_interval=95):
+def plot_cardinality_tests(results, title=None, figsize=(12, 9), facecolor='white', confidence_interval=95):
     """Generate a Seaborn plot of the results data.
 
     Args:
         results (list[dicts]): A list of results dictionaries - one dictionary per test run.
-        title (str): The plot title.
-        x_axis_log_base (int or None, optional): The base to use for the x-axis, if logorithmic.
-                                                 Defaults to None.
+        title (str, optional): The plot title. Defaults to None.
         figsize (tuple, optional): The figure dimensions in inches. Defaults to (12, 9).
         facecolor (str, optional): The figure background colour. Defaults to 'white'.
         confidence_interval (int or str, optional): Confidence interval percent value to use in the plot.
@@ -359,49 +314,34 @@ def seaborn_plot(results, title=None, x_axis_log_base=None, figsize=(12, 9), fac
     """
     # Make a dataframe from the list of dictionaries
     testing_df = pd.DataFrame(results)
-    
     # Unpivot all columns not specified in the id_vars list
     tall_df = pd.melt(testing_df, id_vars=['cardinality'], var_name='method', value_name='iterations')
     # Make the plot
-    print(tall_df)
     fig, ax = plt.subplots(figsize=figsize, facecolor=facecolor)
     ax = sns.lineplot(data=tall_df, x='cardinality', y='iterations', hue='method', ci=confidence_interval)
-    ax.set_xlabel('multiset cardinality')
-    if x_axis_log_base:
-        ax.set_xscale('log', base=x_axis_log_base)
+    ax.set_xlabel('progression cardinality')
+    ax.set_xscale('log', base=2)
     ax.set_ylabel('mean number of iterations')
     # Title
     if title:
-        # Get repeats
-        repeats = len(testing_df)
+        # Get repeats (just check the value for the first method/cardinality group)
+        repeats = tall_df.groupby(['method', 'cardinality']).agg('size')[0]
         # Underscore assignment to supress Text object output
         _ = ax.set_title(f'{title} ({repeats} repeats)')
     return fig
 
 
-def run_array_space_tests(cardinality, repeats, start, step):
-    testing_results = []
-    arithmetic = generate_arithmetic_array(start, step, cardinality)
-    geometric = generate_geometric_array(start, step, cardinality)
-    fibonacci = generate_fibonacci_series(cardinality)
-    for space, array in [('arithmetic', arithmetic), ('geometric', geometric), ('fibonacci', fibonacci)]:
-        searcher = ArraySearcher(array)
-        for _ in tqdm(range(repeats)):
-            query_val = searcher.get_random_array_item()
-            results = searcher.compare_methods(query_val)
-            results['space'] = space
-            testing_results.append(results)
-
-    return testing_results
-
-
-def plot_array_space_tests(results, title=None, figsize=(12, 9), facecolor='white'):
+def plot_progression_comparison(arithmetic_results, geometric_results, cardinality, title=None, figsize=(12, 9), facecolor='white'):
     # Make a dataframe from the list of dictionaries
-    testing_df = pd.DataFrame(results)
+    arithmetic_df = pd.DataFrame(arithmetic_results)
+    arithmetic_df['space'] = ['arithmetic' for _ in range(len(arithmetic_df))]
+    geometric_df = pd.DataFrame(geometric_results)
+    geometric_df['space'] = ['geometric' for _ in range(len(geometric_df))]
+    space_testing_df = pd.concat([arithmetic_df, geometric_df])
+    space_testing_df = space_testing_df[space_testing_df.cardinality == cardinality]
     # Unpivot all columns not specified in the id_vars list
-    tall_df = pd.melt(testing_df, id_vars=['space'], var_name='method', value_name='iterations')
+    tall_df = pd.melt(space_testing_df, id_vars=['space', 'cardinality'], var_name='method', value_name='iterations')
     # Make the plot
-    print(tall_df)
     fig, ax = plt.subplots(figsize=figsize, facecolor=facecolor)
     ax = sns.barplot(data=tall_df, x='space', y='iterations', hue='method')
     ax.set_xlabel('array space')
@@ -409,113 +349,74 @@ def plot_array_space_tests(results, title=None, figsize=(12, 9), facecolor='whit
     ax.set_ylabel('log(mean number of iterations)')
     # Title
     if title:
-        # Get repeats
-        repeats = testing_df.groupby(['space']).agg('size')[0]
         # Underscore assignment to supress Text object output
-        _ = ax.set_title(f'{title} ({repeats} lookups)')
+        _ = ax.set_title(f'{title} (cardinality {cardinality})')
     return fig
 
 def main():
-
+    # SETUP
     # Pandas and seaborn options
     pd.set_option('display.max_rows', 10)
     sns.set_context('talk') 
-    
     # Make sure we have a folder to write results to
     import os
     if not os.path.isdir('results'):
         os.mkdir('results')
 
-    CARDINALITY = 1000
-    MIN_START = 1
-    MAX_START = 1000
-    MIN_STEP = 1
-    MAX_STEP = 1000
 
     # WALKTHROUGH EXAMPLE
-    # Generate a random array of length 1000
-    # sampled from a random arithmetic progression of length 100 * 1000
-    array = generate_random_progression(MIN_START, MAX_START, MIN_STEP, MAX_STEP,
-                                        CARDINALITY, 'arithmetic')
+    # Input parameters
+    CARDINALITY = 50
+    SPACE = 'arithmetic'
+    START_RANGE = (1, 10000)
+    STEP_RANGE = (1, 10000)
+    # Generate a random progression
+    array = generate_random_array(cardinality=CARDINALITY, space=SPACE, start_range=START_RANGE, step_range=STEP_RANGE)
+    print(array)
+    # Make a searcher object
     searcher = ArraySearcher(array)
     query_val = searcher.get_random_array_item()
     print(query_val)
+    # Compare the different search methods
     results = searcher.compare_methods(query_val, verbose=True)
     print(results)
 
 
-    # Run tests
-    testing_results = run_cardinality_tests(start_cardinality=START_CARDINALITY, growth_mode='arithmetic',
-                                            growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
-                                            min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
-
-
-    # COMPARE ARITHMETIC, GEOMETRIC, FIBONACCI
-    # Input parameters
-    START = 1
-    STEP = 2
-    CARDINALITY = 1000
+    # ARITHMETIC SERIS TESTS
+    # Run tests for arithmetic series of cardinalities 2**0 - 2**10 (1000 repeats)
     REPEATS = 1000
-    
-    testing_results = run_array_space_tests(cardinality=CARDINALITY,
-                                            repeats=REPEATS,
-                                            start=START, step=STEP)
-    testing_df = pd.DataFrame(testing_results)
-    testing_df.to_csv('results/array_space_results.csv')
-
+    SPACE = 'arithmetic'
+    TOP_POWER = 10
+    arithmetic_results = run_cardinality_tests(space=SPACE, repeats=REPEATS, top_power=TOP_POWER)
+    # Export results as CSV
+    arithmetic_df = pd.DataFrame(arithmetic_results)
+    arithmetic_df.to_csv('results/arithmetic_results.csv')
     # Make seaborn plot
-    fig = plot_array_space_tests(testing_results, title='Array space comparison')
-    fig.savefig('results/array_space_comparison.png')
-    
-    
-    # ARITHMETIC PROGRESSION
-    # Input parameters
-    MIN_ARRAY_VAL = 1
-    START_CARDINALITY = 50
-    MAX_VAL_FACTOR = 10
-    GROWTH_STEPS = 100
-    GROWTH_FACTOR = 10
-    REPEATS = 1000
-
-    # Run tests
-    testing_results = run_cardinality_tests(start_cardinality=START_CARDINALITY, growth_mode='arithmetic',
-                                            growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
-                                            min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
-    
-    # Make seaborn plot
-    fig = seaborn_plot(testing_results, hue='series_type')
+    fig = plot_cardinality_tests(arithmetic_results, title='Arithmetic comparison')
     fig.savefig('results/arithmetic_comparison.png')
-    
-    # Export raw data to CSV
-    testing_df = pd.DataFrame(testing_results)
-    testing_df.to_csv('results/arithmetic_results.csv')
-    
-    # Make seaborn plot
-    fig = seaborn_plot(testing_results, repeats=REPEATS)
-    fig.savefig('results/arithmetic_comparison.png')
-    
-    # GEOMETRIC PROGRESSION
-    # Increasing cardinalities
-    MIN_ARRAY_VAL = 1
-    START_CARDINALITY = 50
-    MAX_VAL_FACTOR = 10
-    GROWTH_STEPS = 10
-    GROWTH_FACTOR = 2
-    REPEATS = 1000
 
-    # Run tests
-    testing_results = run_cardinality_tests(start_cardinality=START_CARDINALITY, growth_mode='geometric',
-                                            growth_factor=GROWTH_FACTOR, growth_steps=GROWTH_STEPS, repeats=REPEATS,
-                                            min_array_val=MIN_ARRAY_VAL, max_val_factor=MAX_VAL_FACTOR)
-    
-    # Export raw data to CSV
-    testing_df = pd.DataFrame(testing_results)
-    testing_df.to_csv('results/geometric_results.csv')
-    
+
+    # GEOMETRIC SERIS TESTS
+    # Run tests for geometric series of cardinalities 2**0 - 2**10 (1000 repeats)
+    SPACE = 'geometric'
+    geometric_results = run_cardinality_tests(space=SPACE, repeats=REPEATS, top_power=TOP_POWER)
+    # Export results as CSV
+    geometric_df = pd.DataFrame(geometric_results)
+    geometric_df.to_csv('results/geometric_results.csv')
     # Make seaborn plot
-    fig = seaborn_plot(results=testing_results, repeats=REPEATS, x_axis_log_base=2)
+    fig = plot_cardinality_tests(geometric_results, title='Arithmetic comparison')
     fig.savefig('results/geometric_comparison.png')
 
+
+    # COMPARE ARITHMETIC AND GEOMETRIC PERFORMANCE
+    # Input parameters
+    CARDINALITY = 1024
+    # Make seaborn plot
+    fig = plot_progression_comparison(arithmetic_results=arithmetic_results,
+                                      geometric_results=geometric_results,
+                                      cardinality=CARDINALITY,
+                                      title='Comparison of arithmetic vs geometric progressions')
+    fig.savefig('results/progression_space_comparison.png')
 
 if __name__ == '__main__':
     main()
